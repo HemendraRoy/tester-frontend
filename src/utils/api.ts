@@ -1,16 +1,29 @@
 import type { ApiResponse, ExecutePayload, ResponseState } from '../types';
-
-const EXECUTE_URL = '/execute';
+import { getExecuteUrl } from './config';
 
 export async function executeRequest(payload: ExecutePayload): Promise<ResponseState> {
   try {
-    const response = await fetch(EXECUTE_URL, {
+    const response = await fetch(getExecuteUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
 
-    const data = (await response.json()) as ApiResponse;
+    const text = await response.text();
+
+    let data: ApiResponse;
+    try {
+      data = JSON.parse(text) as ApiResponse;
+    } catch {
+      return {
+        status: 0,
+        statusText: 'Error',
+        headers: {},
+        body: null,
+        duration: 0,
+        error: `API returned a non-JSON response (${response.status}). Check VITE_API_URL points to your backend.`,
+      };
+    }
 
     if (!data.success) {
       return {
