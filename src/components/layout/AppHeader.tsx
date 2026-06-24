@@ -28,9 +28,12 @@ export function ThemeToggle() {
   );
 }
 
+
 export function AppHeader() {
+  const [showInfo, setShowInfo] = useState(false);
+
   return (
-    <header className="flex h-10 shrink-0 items-center justify-between border-b border-border bg-surface-secondary px-3">
+    <header className="relative flex h-10 shrink-0 items-center justify-between border-b border-border bg-surface-secondary px-3">
       <div className="flex items-center gap-2">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-accent">
           <path
@@ -41,9 +44,51 @@ export function AppHeader() {
             strokeLinejoin="round"
           />
         </svg>
-        <span className="text-sm font-semibold text-text-primary">Tester</span>
+        <span className="text-sm font-semibold text-text-primary">
+          Tester
+        </span>
       </div>
-      <ThemeToggle />
+
+      <div className="flex items-center gap-2">
+        <a
+          href="https://digitalheroesco.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Button variant="ghost" size="sm">
+            Built for Digital Heroes
+          </Button>
+        </a>
+
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowInfo((v) => !v)}
+          >
+            My Info
+          </Button>
+
+          <div
+            className={`absolute right-0 top-10 z-50 w-64 overflow-hidden rounded-lg border border-border bg-surface shadow-lg transition-all duration-300 ${
+              showInfo
+                ? 'max-h-40 opacity-100'
+                : 'max-h-0 opacity-0 border-transparent'
+            }`}
+          >
+            <div className="p-3">
+              <div className="font-medium text-text-primary">
+                Hemendra Roy
+              </div>
+              <div className="mt-1 text-sm text-text-secondary">
+                hemendraroy04@gmail.com
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ThemeToggle />
+      </div>
     </header>
   );
 }
