@@ -1,14 +1,47 @@
 import type { ApiResponse, ExecutePayload, ResponseState } from '../types';
 import { getExecuteUrl } from './config';
 
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 3000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchExecute(payload: ExecutePayload): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await fetch(getExecuteUrl(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Failed to fetch');
+      if (attempt < MAX_RETRIES) {
+        await sleep(RETRY_DELAY_MS);
+      }
+    }
+  }
+
+  throw lastError ?? new Error('Failed to fetch');
+}
+
+function networkErrorMessage(error: Error): string {
+  if (error.message === 'Failed to fetch') {
+    return (
+      'Could not reach the proxy server. This often happens when a Render-hosted API is waking up ' +
+      '(cold start). Wait a moment and try again, or check that VITE_API_URL and CORS_ORIGIN are configured correctly.'
+    );
+  }
+  return error.message;
+}
+
 export async function executeRequest(payload: ExecutePayload): Promise<ResponseState> {
   try {
-    const response = await fetch(getExecuteUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
+    const response = await fetchExecute(payload);
     const text = await response.text();
 
     let data: ApiResponse;
@@ -44,13 +77,14 @@ export async function executeRequest(payload: ExecutePayload): Promise<ResponseS
       duration: data.data.duration,
     };
   } catch (error) {
+    const message = error instanceof Error ? networkErrorMessage(error) : 'Failed to execute request';
     return {
       status: 0,
       statusText: 'Network Error',
       headers: {},
       body: null,
       duration: 0,
-      error: error instanceof Error ? error.message : 'Failed to execute request',
+      error: message,
     };
   }
 }
